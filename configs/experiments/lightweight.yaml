@@ -1,0 +1,60 @@
+# Lightweight model configuration
+# Optimized for limited computational resources
+
+# Inherit from baseline config
+_base_: ../baseline.yaml
+
+experiment:
+  name: "lightweight_experiment"
+  description: "Reduced model size for limited resources"
+
+model:
+  # Smaller model architecture
+  features: [16, 32, 64, 128, 256]  # Halved feature maps
+  dropout_rate: 0.2  # Higher dropout for regularization
+  use_attention: false
+  deep_supervision: false
+
+data:
+  # Smaller patches and less caching
+  patch_size: [96, 96, 96]
+  cache_rate: 0.05
+  samples_per_epoch: 800
+
+training:
+  # Training parameters for smaller model
+  max_epochs: 400  # More epochs due to smaller capacity
+  batch_size: 4   # Larger batch size possible with smaller model
+  learning_rate: 2e-4  # Higher learning rate
+  
+loss:
+  name: "DiceBCELoss"
+  dice_weight: 1.0
+  bce_weight: 1.0
+  class_weights: [0.1, 0.4, 0.3, 0.2]  # Adjusted weights
+
+optimization:
+  optimizer: "AdamW"
+  scheduler: "StepLR"
+  step_size: 100
+  gamma: 0.5
+
+validation:
+  interval: 10  # Less frequent validation
+  patience: 80
+
+inference:
+  # Smaller inference patches
+  roi_size: [96, 96, 96]
+  sw_batch_size: 8
+  overlap: 0.6
+
+logging:
+  use_wandb: false  # Disable to save resources
+  log_images: false
+  
+# Resource optimization
+resource_optimization:
+  mixed_precision: true
+  gradient_accumulation_steps: 2
+  cpu_workers: 2

@@ -1,0 +1,50 @@
+# Deep supervision experiment configuration
+# Uses auxiliary losses at multiple scales
+
+# Inherit from baseline config
+_base_: ../baseline.yaml
+
+experiment:
+  name: "deep_supervision_experiment"
+  description: "Multi-scale deep supervision training"
+
+model:
+  # Enable deep supervision
+  deep_supervision: true
+  use_attention: true  # Also use attention gates
+  dropout_rate: 0.15  # Slightly higher dropout for regularization
+
+loss:
+  # Deep supervision requires special loss handling
+  name: "DeepSupervisionLoss"
+  base_loss: "DiceFocalLoss"
+  dice_weight: 1.0
+  focal_weight: 0.5
+  # Weights for each supervision level (finest to coarsest)
+  supervision_weights: [1.0, 0.5, 0.25, 0.125]
+  
+training:
+  # Adjusted for deep supervision
+  max_epochs: 250  # May converge faster with deep supervision
+  batch_size: 1   # Reduce batch size due to higher memory usage
+  learning_rate: 1e-4
+  
+optimization:
+  # More aggressive optimization for faster convergence
+  optimizer: "AdamW"
+  scheduler: "CosineAnnealingLR"
+  T_max: 200
+  
+validation:
+  interval: 5
+  patience: 40  # May converge faster
+
+logging:
+  use_wandb: true
+  experiment_tags: ["deep_supervision", "multi_scale"]
+  log_images: true
+  
+# Additional memory optimization
+memory_optimization:
+  gradient_checkpointing: true
+  pin_memory: true

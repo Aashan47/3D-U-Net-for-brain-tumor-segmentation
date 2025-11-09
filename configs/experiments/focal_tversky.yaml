@@ -1,0 +1,38 @@
+# Focal Tversky Loss experiment configuration
+# Optimized for handling class imbalance in BraTS data
+
+# Inherit from baseline config
+_base_: ../baseline.yaml
+
+# Override specific parameters for Focal Tversky experiment
+experiment:
+  name: "focal_tversky_experiment"
+  description: "Focal Tversky loss for class imbalance handling"
+  
+loss:
+  name: "FocalTverskyLoss"
+  alpha: 0.7  # Weight for false positives (higher = penalize FP more)
+  beta: 0.3   # Weight for false negatives (higher = penalize FN more)
+  gamma: 1.33 # Focusing parameter for hard examples
+  include_background: false
+
+training:
+  # Adjusted training parameters for Focal Tversky
+  max_epochs: 350  # Slightly more epochs due to different loss dynamics
+  learning_rate: 5e-5  # Lower learning rate for more stable training
+  
+optimization:
+  # More conservative optimization
+  scheduler: "ReduceLROnPlateau"
+  factor: 0.5
+  patience: 20
+  min_lr: 1e-7
+  
+validation:
+  # More frequent validation to monitor loss behavior
+  interval: 3
+  patience: 60  # Higher patience for Focal Tversky
+
+logging:
+  use_wandb: true
+  experiment_tags: ["focal_tversky", "class_imbalance"]

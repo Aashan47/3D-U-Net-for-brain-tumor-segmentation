@@ -1,0 +1,95 @@
+# H100-optimized configuration for 24-hour 5-fold cross-validation
+# Leverages H100's massive memory and compute power
+
+# Inherit from baseline config
+_base_: ../baseline.yaml
+
+experiment:
+  name: "h100_24h_experiment"
+  description: "H100-optimized training for complete 5-fold CV in 24 hours"
+
+data:
+  # Leverage massive H100 memory
+  cache_rate: 0.4          # Cache 40% of data (with 95GB memory)
+  patch_size: [128, 128, 128]  # Keep full resolution
+  samples_per_epoch: 1500  # More samples per epoch for better convergence
+  foreground_ratio: 0.7
+  
+training:
+  # nnU-Net inspired optimizations for H100
+  max_epochs: 1000         # nnU-Net style long training
+  batch_size: 2            # nnU-Net uses smaller batches for stability
+  learning_rate: 3e-4      # nnU-Net default LR
+  weight_decay: 3e-5       # nnU-Net weight decay
+  gradient_clip_norm: 12.0 # nnU-Net gradient clipping
+  use_amp: true            # Critical for H100 Tensor Cores
+  
+  # nnU-Net scheduler settings
+  poly_lr_schedule: true   # Polynomial learning rate decay
+  initial_lr: 3e-4
+  poly_lr_power: 0.9
+  
+model:
+  # Keep full model size - H100 can handle it
+  features: [32, 64, 128, 256, 512]
+  deep_supervision: false   # Disable for speed
+  use_attention: false      # Disable for speed
+  dropout_rate: 0.1
+
+loss:
+  # nnU-Net style loss combination
+  name: "DiceCELoss"       # nnU-Net uses Dice + CrossEntropy
+  dice_weight: 1.0
+  ce_weight: 1.0
+  smooth: 1e-5
+  ignore_index: -100
+
+optimization:
+  # Optimized for H100 and larger batch size
+  optimizer: "AdamW"
+  scheduler: "CosineAnnealingWarmRestarts"
+  warmup_epochs: 8         # Faster warmup
+  T_0: 30                  # Shorter restart period
+  T_mult: 1.5              # Smaller multiplier
+  eta_min: 1e-7
+
+validation:
+  # nnU-Net validation strategy
+  interval: 5              # nnU-Net validates every 5 epochs
+  save_top_k: 2            # Save fewer checkpoints
+  patience: 100            # nnU-Net uses higher patience
+  monitor_metric: "dice_mean"
+  monitor_mode: "max"
+  
+  # Early stopping based on validation plateau
+  min_delta: 1e-4          # Minimum change to qualify as improvement
+  check_finite: true       # Stop on infinite/NaN values
+
+logging:
+  # Optimized logging
+  use_wandb: true
+  log_images: true
+  image_log_interval: 30   # Less frequent image logging
+
+# H100-specific optimizations
+hardware_optimization:
+  # Memory optimizations
+  pin_memory: true
+  non_blocking_transfer: true
+  
+  # Compute optimizations  
+  compile_model: false     # PyTorch 2.0 compilation (disable if issues)
+  channels_last: true      # Memory format optimization
+  
+  # DataLoader optimizations
+  num_workers: 8           # More workers with H100
+  prefetch_factor: 4       # Larger prefetch
+  persistent_workers: true
+
+# Expected performance targets for H100
+performance_targets:
+  time_per_fold: "4.5 hours"
+  total_time_5fold: "22.5 hours"
+  expected_dice_wt: "> 0.85"
+  expected_dice_tc: "> 0.80" 
+  expected_dice_et: "> 0.75"

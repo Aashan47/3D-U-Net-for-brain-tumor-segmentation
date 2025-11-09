@@ -1,0 +1,8 @@
+{
+  "fold": 0,
+  "final_train_loss": 0.5141085088253021,
+  "final_val_loss": 1.8823386907577515,
+  "best_dice_wt": 2.679141825437546,
+  "total_epochs": 200,
+  "model_parameters": 22580964
+}

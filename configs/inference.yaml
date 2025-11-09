@@ -1,0 +1,110 @@
+# Inference configuration for BraTS 3D segmentation
+# Optimized for production inference
+
+model:
+  # Model architecture (should match training config)
+  input_channels: 4
+  output_channels: 4
+  features: [32, 64, 128, 256, 512]
+  deep_supervision: false
+  use_attention: false
+
+inference:
+  # Sliding window parameters
+  roi_size: [128, 128, 128]  # ROI size for sliding window
+  sw_batch_size: 4  # Batch size for sliding window
+  overlap: 0.5  # Overlap ratio between windows
+  mode: "gaussian"  # Blending mode: gaussian, constant
+  sigma_scale: 0.125  # Gaussian sigma scale
+  
+  # Memory optimization
+  pin_memory: true
+  non_blocking: true
+  
+  # Device settings
+  device: "auto"  # auto, cuda, cpu
+  mixed_precision: true
+
+preprocessing:
+  # Preprocessing parameters (should match training)
+  target_spacing: [1.0, 1.0, 1.0]
+  target_orientation: "RAS"
+  intensity_range: [-175, 250]
+  normalize_intensity: true
+  crop_foreground: true
+  margin: 10
+
+postprocessing:
+  # Postprocessing pipeline
+  enabled: true
+  
+  # Component filtering
+  min_component_sizes:
+    1: 500  # NCR minimum size
+    2: 500  # ED minimum size  
+    4: 200  # ET minimum size
+  
+  # Morphological operations
+  apply_morphological_ops: true
+  morphology_iterations: 1
+  
+  # Hole filling
+  fill_holes: true
+  max_hole_size: 1000
+  
+  # Anatomical constraints
+  enforce_constraints: true
+  
+  # Final cleanup
+  final_cleanup: true
+  final_min_size: 50
+
+output:
+  # Output format settings
+  save_probabilities: false  # Save probability maps
+  save_class_labels: true    # Save class label maps
+  output_format: "nifti"     # nifti, numpy
+  compress: true             # Compress NIfTI files
+  
+  # Metadata preservation
+  preserve_affine: true      # Preserve original affine
+  preserve_header: true      # Preserve original header
+  
+evaluation:
+  # Evaluation settings (if ground truth available)
+  compute_metrics: true
+  spacing: [1.0, 1.0, 1.0]  # Spacing for metric calculation
+  
+  # Metrics to compute
+  metrics:
+    - "dice"
+    - "hausdorff_95"
+    - "surface_distance"
+    - "volume_correlation"
+  
+  # Regions for BraTS evaluation
+  regions:
+    WT: [1, 2, 4]  # Whole tumor
+    TC: [1, 4]     # Tumor core
+    ET: [4]        # Enhancing tumor
+    
+quality_control:
+  # Quality control checks
+  check_input_integrity: true
+  validate_preprocessing: true
+  check_output_range: true
+  
+  # Warnings and errors
+  warn_on_empty_prediction: true
+  error_on_invalid_input: true
+
+logging:
+  # Logging configuration
+  log_level: "INFO"
+  log_file: null  # Log to file if specified
+  progress_bar: true
+  
+  # Per-subject logging
+  log_processing_time: true
+  log_memory_usage: false
+  log_intermediate_steps: false

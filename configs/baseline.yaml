@@ -1,0 +1,98 @@
+# Baseline configuration for BraTS 3D segmentation training
+# This configuration provides a solid starting point for training
+
+data:
+  # Data loading parameters
+  root_dir: "/data/BraTS2021"
+  cache_rate: 0.1  # Fraction of data to cache in memory
+  patch_size: [128, 128, 128]  # Patch size for training
+  samples_per_epoch: 1000  # Number of patches per epoch
+  foreground_ratio: 0.7  # Ratio of tumor-containing patches
+  val_split: 0.2  # Validation split ratio
+  
+  # Preprocessing parameters
+  spacing: [1.0, 1.0, 1.0]  # Target spacing in mm
+  orientation: "RAS"  # Target orientation
+  intensity_range: [-175, 250]  # Intensity clipping range
+
+model:
+  # Model architecture
+  name: "UNet3D"
+  input_channels: 4  # T1, T1ce, T2, FLAIR
+  output_channels: 4  # Background, NCR, ED, ET
+  features: [32, 64, 128, 256, 512]  # Feature maps at each level
+  deep_supervision: false  # Use deep supervision
+  use_attention: false  # Use attention gates
+  dropout_rate: 0.1  # Dropout probability
+  
+training:
+  # Training hyperparameters
+  max_epochs: 300
+  batch_size: 2
+  learning_rate: 1e-4
+  weight_decay: 1e-5
+  gradient_clip_norm: 1.0
+  use_amp: true  # Use mixed precision training
+  
+loss:
+  # Loss function configuration
+  name: "DiceFocalLoss"  # Options: DiceFocalLoss, DiceBCELoss, FocalTverskyLoss
+  dice_weight: 1.0
+  focal_weight: 0.5
+  alpha: 0.25  # Focal loss alpha
+  gamma: 2.0   # Focal loss gamma
+  class_weights: [0.1, 0.3, 0.3, 0.3]  # Class weights for BCE component
+  include_background: false
+
+optimization:
+  # Optimizer and scheduler
+  optimizer: "AdamW"  # Options: AdamW, Adam, SGD
+  scheduler: "CosineAnnealingWarmRestarts"
+  warmup_epochs: 10
+  T_0: 50  # Initial restart period
+  T_mult: 2  # Period multiplier
+  eta_min: 1e-6  # Minimum learning rate
+
+validation:
+  # Validation configuration
+  interval: 5  # Validate every N epochs
+  save_top_k: 3  # Save top K models
+  patience: 50  # Early stopping patience
+  monitor_metric: "dice_mean"  # Metric to monitor
+  monitor_mode: "max"  # Maximize or minimize metric
+
+logging:
+  # Experiment tracking
+  use_wandb: false
+  project_name: "brats-3d-segmentation"
+  log_images: true
+  image_log_interval: 20
+  
+augmentation:
+  # Data augmentation parameters
+  rotation_prob: 0.5
+  rotation_range: 0.3  # Radians
+  flip_prob: 0.5
+  elastic_deform_prob: 0.2
+  intensity_scale_prob: 0.3
+  intensity_scale_factor: 0.1
+  contrast_adjust_prob: 0.3
+  gaussian_noise_prob: 0.2
+  bias_field_prob: 0.2
+
+inference:
+  # Inference parameters
+  roi_size: [128, 128, 128]
+  sw_batch_size: 4
+  overlap: 0.5
+  mode: "gaussian"  # Blending mode
+
+postprocessing:
+  # Postprocessing parameters
+  min_component_sizes:
+    NCR: 500  # Label 1
+    ED: 500   # Label 2
+    ET: 200   # Label 4
+  apply_morphological_ops: true
+  enforce_constraints: true
+  fill_holes: true

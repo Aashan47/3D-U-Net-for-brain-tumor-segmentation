@@ -1,0 +1,51 @@
+# Attention U-Net experiment configuration
+# Uses attention gates for better feature selection
+
+# Inherit from baseline config
+_base_: ../baseline.yaml
+
+experiment:
+  name: "attention_unet_experiment"
+  description: "Attention U-Net with attention gates"
+
+model:
+  # Enable attention gates
+  use_attention: true
+  deep_supervision: false
+  dropout_rate: 0.1
+  
+  # Slightly modified architecture for attention
+  features: [32, 64, 128, 256, 320]  # Different final layer size
+
+training:
+  # Standard training parameters
+  max_epochs: 300
+  batch_size: 2
+  learning_rate: 8e-5  # Slightly lower LR for attention training
+  
+loss:
+  name: "DiceBCELoss"
+  dice_weight: 1.0
+  bce_weight: 0.8
+  class_weights: [0.1, 0.3, 0.3, 0.3]
+  
+optimization:
+  optimizer: "AdamW"
+  scheduler: "CosineAnnealingWarmRestarts"
+  T_0: 40
+  T_mult: 2
+  
+validation:
+  interval: 5
+  patience: 50
+  monitor_metric: "dice_mean"
+
+augmentation:
+  # Enhanced augmentation for attention model
+  rotation_prob: 0.7
+  elastic_deform_prob: 0.3
+  intensity_scale_prob: 0.4
+
+logging:
+  use_wandb: true
+  experiment_tags: ["attention", "attention_gates"]
