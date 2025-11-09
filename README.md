@@ -75,9 +75,11 @@ bash check_training.sh
 
 ### Segmentation Examples
 
-Ground Truth vs Predicted Segmentation:
+Ground Truth :
 
 ![Ground Truth](outputs/ground-truth.jpg)
+
+Predicted Segmentation :
 
 ![Predicted](outputs/predicted.jpg)
 
